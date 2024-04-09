@@ -3,18 +3,17 @@ import time
 import random
 import obspython as obs
 
-# Primary directory for new videos
+# Primary directory where new videos are added
 videos_directory = "/home/ratio/www/video"
-# Directory for random videos during idle times
+# Secondary directory for random videos during idle times
 idle_videos_directory = "/home/ratio/www/newvideos"
 source_name = "ass"
 
 last_played_video = ""
-last_idle_video = ""
 last_check = 0
 idle_video_list = []  # List to manage idle videos playback
 
-def play_video(video_path):
+def play_video(video_path, idle=False):
     global last_played_video
     source = obs.obs_get_source_by_name(source_name)
     if source:
@@ -23,8 +22,9 @@ def play_video(video_path):
         obs.obs_source_update(source, settings)
         obs.obs_data_release(settings)
         obs.obs_source_release(source)
-        last_played_video = video_path
-        print(f"Now playing: {video_path}")
+        if not idle:  # Only update last played video if it's not an idle video
+            last_played_video = video_path
+        print(f"[newscript.py] Now playing: {video_path}")
 
 def get_latest_video(directory):
     try:
@@ -38,23 +38,22 @@ def get_latest_video(directory):
         return None
 
 def play_random_idle_video():
-    global idle_video_list, last_idle_video
+    global idle_video_list
     try:
         if not idle_video_list:
-            idle_video_list = [os.path.join(idle_videos_directory, f) for f in os.listdir(idle_videos_directory) if f.endswith(".mp4")]
+            idle_video_list = [f for f in os.listdir(idle_videos_directory) if f.endswith(".mp4")]
             random.shuffle(idle_video_list)  # Shuffle to ensure random playback
         
-        while idle_video_list:
-            video_path = idle_video_list.pop()
-            if video_path != last_idle_video or len(idle_video_list) == 0:  # Avoid immediate repetition unless it's the only video
-                play_video(video_path)
-                last_idle_video = video_path
-                return
+        if idle_video_list:
+            video_path = os.path.join(idle_videos_directory, idle_video_list.pop())
+            play_video(video_path, idle=True)
+            return True
     except Exception as e:
         print(f"Error playing random idle video: {e}")
+    return False
 
 def script_tick(seconds):
-    global last_check
+    global last_check, last_played_video
     current_time = time.time()
     # Check for a new video every 10 seconds
     if current_time - last_check > 10:
@@ -62,7 +61,8 @@ def script_tick(seconds):
         if latest_video and latest_video != last_played_video:
             play_video(latest_video)
         elif not latest_video or latest_video == last_played_video:  # No new video found or waiting for new ones
-            play_random_idle_video()
+            if not play_random_idle_video():
+                last_played_video = ""  # Reset if no idle video is available to play
         last_check = current_time
 
 def script_description():
