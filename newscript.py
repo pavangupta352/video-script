@@ -1,8 +1,8 @@
 import os
+import subprocess
 import time
 import random
 import obspython as obs
-from moviepy.editor import VideoFileClip
 
 # Primary directory where new videos are added
 videos_directory = "/home/ratio/www/video"
