@@ -18,10 +18,18 @@ idle_video_list = []  # List to manage idle videos playback
 
 def get_video_duration(video_path):
     try:
-        with VideoFileClip(video_path) as video:
-            return video.duration
+        # Run ffprobe to get the video duration in seconds
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
+             "default=noprint_wrappers=1:nokey=1", video_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        duration = float(result.stdout)
+        return duration
     except Exception as e:
-        print(f"Error getting video duration: {e}")
+        print(f"Error getting video duration with ffprobe: {e}")
         return 0
 
 
