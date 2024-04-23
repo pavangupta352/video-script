@@ -2,7 +2,7 @@ import os
 import time
 import obspython as obs
 
-
+# asd
 videos_directory = "/home/ratio/www/video"
 source_name = "ass"
 
